@@ -1,67 +1,9 @@
-function quadBezier(p0,p1,p2, t) {
-    pFinal = {};
-    pFinal.x = Math.pow(1 - t, 2) * p0.x + 
-               (1 - t) * 2 * t * p1.x + 
-               t * t * p2.x;
-    pFinal.y = Math.pow(1 - t, 2) * p0.y + 
-               (1 - t) * 2 * t * p1.y + 
-               t * t * p2.y;
-    return pFinal;
-}
-
-function cubicBezier(p0,p1,p2,p3, t) {
-    pFinal = {};
-    pFinal.x = Math.pow(1 - t, 3) * p0.x + 
-               Math.pow(1 - t, 2) * 3 * t * p1.x + 
-               (1 - t) * 3 * t * t * p2.x + 
-               t * t * t * p3.x;
-    pFinal.y = Math.pow(1 - t, 3) * p0.y + 
-               Math.pow(1 - t, 2) * 3 * t * p1.y + 
-               (1 - t) * 3 * t * t * p2.y + 
-               t * t * t * p3.y;
-    return pFinal;
-}
-
-function sigmoid(z) {
-    return 1 / (1 + Math.exp(-z));
-}
-
-function groupMidpoint(p0,p1) {
-    xsum = 0
-    ysum = 0
-    for(var i = 0; i < p0.length; i++) {
-        xsum += p0[i].x + p1[i].x
-        ysum += p0[i].y + p1[i].y
-    }
-    p = {
-        x: xsum / (p0.length + p1.length),
-        y: ysum / (p0.length + p1.length)
-    }
-    console.log(p.x, p.y)
-    return p
-}
-
-function quadBezierInterpolation(p0,p1,c,t) {
-    if(p0.length != p1.length) {
-        console.log("error! incorrect point array sizes")
-        return
-    }
-    interpolated = []
-    for(var i = 0; i < p0.length; i++) {
-        interpolated.push(quadBezier(p0[i],c,p1[i],t))
-    }
-
-    return interpolated
-}
-
-
 var gesture = function(s) {
     s.point_stack = []
-    s.old_point_stack = []
-    s.cntr_curve_stack = []
-    var override = true;
-    var done = false;
-    var cntr_curve = true;
+    s.last_two = []
+    s.gestures = []
+    s.GESTURE_POINT_NUM = 5
+
     s.setup = function() {
         s.createCanvas(s.windowHeight,s.windowHeight)
     }
@@ -70,50 +12,32 @@ var gesture = function(s) {
         s.push()
         s.background(75)
         s.noFill()
-        if(s.point_stack.length > 22) {
-            if(override) {
-                s.old_point_stack = s.point_stack
-                s.point_stack = []
-                override = false;
-            } else {
-                done = true
-            }
+        if(s.point_stack.length === s.GESTURE_POINT_NUM) {
+            s.last_two.push(s.point_stack)
+            s.point_stack = []
         }
-        if(cntr_curve) {
-            if(s.cntr_curve_stack.length > 3) {
-                cntr_curve = false
-                return
-            }
-            s.stroke('red')
-            for(var i = 0; i < s.cntr_curve_stack.length; i++) {
-                s.ellipse(s.cntr_curve_stack[i].x, s.cntr_curve_stack[i].y, 3)
-            }
-            return
 
+        if(s.last_two.length === 2) {
+            s.gestures.push({
+                point_set: s.last_two,
+                f: ge_pickDrawFunction()
+            })
+            s.last_two = []
         }
-        s.beginShape()
-        for(var i = 0; i < s.point_stack.length; i++) {
-            p = s.point_stack[i]
-            if(!done) {
-                s.ellipse(p.x, p.y, 5)
-            }
-            if(done) {
-                t_c = groupMidpoint(s.point_stack, s.old_point_stack)
-                for(var x = -5; x < 5; x += 0.15) {
-                    y = sigmoid(x)
-                    s.stroke(225*y)
-                    i_t_c = cubicBezier(s.cntr_curve_stack[0], s.cntr_curve_stack[1], s.cntr_curve_stack[2], s.cntr_curve_stack[3], y)
-                    let t_points = quadBezierInterpolation(s.point_stack, s.old_point_stack, i_t_c, y)
-                    s.ellipse(i_t_c.x, i_t_c.y, 2)
-                    s.multicurve(t_points)  
-                }
-                
-            }
+        for(let j = 0; j < s.point_stack.length; j++) {
+            s.ellipse(s.point_stack[j].x,s.point_stack[j].y, 3)
         }
-        s.stroke(0)
         s.multicurve(s.point_stack)
-        s.multicurve(s.old_point_stack)
-        s.pop()
+
+        for(let k = 0; k < s.last_two.length; k++) {
+            s.multicurve(s.last_two[k])
+        }
+
+        for(let i = 0; i < s.gestures.length; i++) {
+            s.multicurve(s.gestures[i].point_set[0])
+            s.multicurve(s.gestures[i].point_set[1])
+            s.gestures[i].f(s, s.gestures[i].point_set)
+        }
     }
 
     s.windowResized = function() {
@@ -125,13 +49,10 @@ var gesture = function(s) {
             x: s.mouseX,
             y: s.mouseY
         }
-        if(cntr_curve) {
-            s.cntr_curve_stack.push(p)
-            return
-        }
-        if(!done) {
-            s.point_stack.push(p)
-        }
+        s.noFill()
+
+        s.point_stack.push(p)
+        
     }
 
     s.multicurve = function(points) {
