@@ -128,6 +128,21 @@ const ge_drawLines = (s, last_two) => {
     s.pop()
 }
 
+const ge_revDrawLines = (s, last_two) => {
+    s.push()
+    s.noFill()
+    s.strokeWeight(1)
+    for(let i = 0; i <= 1; i+=0.02) { 
+        o = ge_multipointInterpolation(last_two[0],i)
+        t = ge_multipointInterpolation(last_two[1],1-i)
+        s.line(o.x,o.y,t.x,t.y)
+    }
+    o = ge_multipointInterpolation(last_two[0],1)
+        t = ge_multipointInterpolation(last_two[1],0)
+        s.line(o.x,o.y,t.x,t.y)
+    s.pop()
+}
+
 const ge_blackHole = (s, last_two) => {
     s.push()
     s.noFill()
@@ -173,8 +188,9 @@ const ge_blackHole = (s, last_two) => {
 }
 
 const ge_gestureArr = [
-    ge_drawLines,
-    ge_blackHole
+    //ge_drawLines,
+    //ge_blackHole,
+    ge_revDrawLines
 ]
 
 const ge_pickDrawFunction = () => {
