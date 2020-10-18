@@ -6,11 +6,11 @@ var gesture = function(s) {
 
     s.setup = function() {
         s.createCanvas(s.windowHeight,s.windowHeight)
-        s.background(75)
     }
 
     s.draw = function() {
         s.push()
+        s.background(75)
         s.noFill()
         if(s.point_stack.length === s.GESTURE_POINT_NUM) {
             s.last_two.push(s.point_stack)

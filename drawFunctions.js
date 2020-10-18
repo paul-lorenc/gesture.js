@@ -188,8 +188,8 @@ const ge_blackHole = (s, last_two) => {
 }
 
 const ge_gestureArr = [
-    //ge_drawLines,
-    //ge_blackHole,
+    ge_drawLines,
+    ge_blackHole,
     ge_revDrawLines
 ]
 
